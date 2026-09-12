@@ -1,0 +1,35 @@
+{
+  "name": "worker-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "tags": [
+    "type:e2e",
+    "scope:worker"
+  ],
+  "implicitDependencies": [
+    "worker",
+    "testing"
+  ],
+  "targets": {
+    "e2e": {
+      "dependsOn": [
+        "worker:build",
+        "worker:serve-e2e"
+      ],
+      "options": {
+        "coverage.reportsDirectory": "../../coverage/apps/worker-e2e"
+      },
+      "cache": false
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/worker-e2e",
+        "commands": [
+          "tsc -p tsconfig.spec.json --noEmit"
+        ],
+        "parallel": false
+      }
+    }
+  }
+}

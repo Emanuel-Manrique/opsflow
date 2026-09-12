@@ -1,0 +1,112 @@
+{
+  "name": "web-angular",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "ops",
+  "sourceRoot": "apps/web-angular/src",
+  "tags": [
+    "type:app",
+    "scope:web"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/web-angular",
+        "browser": "apps/web-angular/src/main.ts",
+        "tsConfig": "apps/web-angular/tsconfig.app.json",
+        "inlineStyleLanguage": "css",
+        "allowedCommonJsDependencies": [
+          "cron-parser"
+        ],
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/web-angular/public"
+          }
+        ],
+        "styles": [
+          "apps/web-angular/src/styles.css"
+        ]
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kb",
+              "maximumError": "8kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "defaultConfiguration": "development",
+      "configurations": {
+        "production": {
+          "buildTarget": "web-angular:build:production"
+        },
+        "development": {
+          "buildTarget": "web-angular:build:development"
+        }
+      },
+      "options": {
+        "proxyConfig": "apps/web-angular/proxy.conf.json"
+      }
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {
+        "watch": false
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "web-angular:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/web-angular/browser",
+        "spa": true
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/web-angular",
+        "commands": [
+          "tsc -p tsconfig.app.json --noEmit",
+          "tsc -p tsconfig.spec.json --noEmit"
+        ],
+        "parallel": false
+      }
+    },
+    "serve-e2e": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "options": {
+        "buildTarget": "web-angular:build:development",
+        "port": 4300,
+        "proxyConfig": "apps/web-angular/proxy.conf.e2e.json"
+      }
+    }
+  }
+}

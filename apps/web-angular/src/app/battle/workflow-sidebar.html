@@ -1,0 +1,44 @@
+<nav class="flex h-full flex-col gap-4 p-3 pt-5" aria-label="Workflows">
+  <div class="flex items-center justify-between gap-2">
+    <h2 class="text-xs font-semibold uppercase tracking-wider text-muted">Workflows</h2>
+    <span class="text-xs text-muted">{{ visible().length }}</span>
+  </div>
+
+  <label>
+    <span class="sr-only">Search workflows</span>
+    <input
+      class="w-full rounded-lg border border-line bg-raised px-3 py-1.5 text-sm"
+      type="search"
+      placeholder="Search workflows…"
+      autocomplete="off"
+      [value]="search()"
+      (input)="updateSearch($event)"
+    />
+  </label>
+
+  <ul class="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+    @for (workflow of visible(); track workflow.id) {
+      <li>
+        <button
+          class="mb-1 flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-3 text-left transition-colors"
+          type="button"
+          [class]="workflow.id === selectedId() ? 'border-blue-500/50 bg-blue-600/15 text-blue-100' : 'border-transparent hover:bg-raised'"
+          [attr.aria-current]="workflow.id === selectedId() ? 'true' : null"
+          (click)="select.emit(workflow)"
+        >
+          <span class="size-2 shrink-0 rounded-sm rotate-45" [class]="workflow.enabled ? 'bg-success' : 'bg-muted'" aria-hidden="true"></span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-medium">{{ workflow.name }}</span>
+            <span class="block truncate text-xs text-muted" [title]="workflow.cronExpr + ' · ' + workflow.timezone">{{ describeCron(workflow.cronExpr) }}</span>
+          </span>
+        </button>
+      </li>
+    } @empty {
+      <li class="px-2 py-6 text-center text-sm text-muted">
+        {{ loading() ? 'Loading workflows…' : 'No workflows match.' }}
+      </li>
+    }
+  </ul>
+  <a class="mt-auto flex items-center gap-2 border-t border-line px-2 pt-4 pb-2 text-sm text-muted hover:text-accent" routerLink="/workflows"><span aria-hidden="true">⚙</span> Manage workflows</a>
+  @if (session.canEdit()) { <a class="px-2 pb-2 text-sm text-accent hover:underline" routerLink="/workflows/new">＋ New workflow</a> }
+</nav>

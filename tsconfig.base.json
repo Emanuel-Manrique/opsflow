@@ -1,0 +1,45 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2022",
+    "module": "preserve",
+    "lib": [
+      "es2023",
+      "dom"
+    ],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": true,
+    "paths": {
+      "@opsflow/contracts": [
+        "./libs/contracts/src/index.ts"
+      ],
+      "@opsflow/domain": [
+        "./libs/domain/src/index.ts"
+      ],
+      "@opsflow/testing": [
+        "./libs/testing/src/index.ts"
+      ],
+      "@opsflow/ui": [
+        "./libs/ui/src/index.ts"
+      ],
+      "@opsflow/persistence": [
+        "./libs/persistence/src/index.ts"
+      ],
+      "@opsflow/observability": [
+        "./libs/observability/src/index.ts"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
+}

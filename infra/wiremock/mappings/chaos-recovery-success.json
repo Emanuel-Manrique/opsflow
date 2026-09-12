@@ -1,0 +1,5 @@
+{
+  "priority": 2,
+  "request": { "urlPath": "/hooks/chaos/recovery", "method": "ANY" },
+  "response": { "status": 204, "fixedDelayMilliseconds": 1500 }
+}

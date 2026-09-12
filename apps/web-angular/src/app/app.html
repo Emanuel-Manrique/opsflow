@@ -1,0 +1,84 @@
+<a
+  class="absolute -left-[9999px] top-2 z-20 rounded-lg bg-accent px-4 py-2 font-semibold text-white shadow-lg focus:left-2"
+  href="#main"
+>
+  Skip to main content
+</a>
+
+<header class="sticky top-0 z-10 flex min-h-16 flex-wrap items-center gap-x-5 gap-y-1 border-b border-line bg-surface px-4 py-1.5 sm:px-5">
+  <a class="flex shrink-0 items-center gap-2.5 no-underline sm:mr-8" routerLink="/battle">
+    <svg class="size-7 text-accent" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 2.5 21 7v10l-9 4.5L3 17V7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+      <path d="M12 7.5 16.5 10v4L12 16.5 7.5 14v-4z" fill="currentColor" opacity="0.85" />
+    </svg>
+    <span class="text-lg font-bold tracking-tight text-ink">OpsFlow</span>
+  </a>
+
+  <nav class="flex items-center gap-0.5 self-stretch" aria-label="Console sections">
+    @for (section of sections; track section.path) {
+      <a
+        class="relative flex items-center px-2.5 py-3 text-sm font-medium text-muted no-underline transition-colors hover:text-ink sm:px-3"
+        [routerLink]="section.path"
+        routerLinkActive="text-accent after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-accent"
+        ariaCurrentWhenActive="page"
+      >
+        {{ section.label }}
+      </a>
+    }
+  </nav>
+
+  @if (session.data().member; as member) {
+    <div class="ml-auto flex min-w-0 items-center gap-2 sm:gap-4">
+      @if (session.data().memberships.length > 1) {
+        <label class="text-sm">
+          <span class="sr-only">Tenant</span>
+          <select
+            class="max-w-32 rounded-lg border border-line bg-raised px-2 py-1.5 text-sm font-medium text-ink disabled:opacity-50 sm:max-w-none sm:px-3"
+            [value]="session.tenantId()"
+            [disabled]="session.busy()"
+            (change)="session.selectTenant($event)"
+          >
+            @for (row of session.data().memberships; track row.tenantId) {
+              <option [value]="row.tenantId" [selected]="row.tenantId === session.tenantId()">{{ row.tenantName }}</option>
+            }
+          </select>
+        </label>
+      } @else {
+        <span class="max-w-32 truncate rounded-lg border border-line bg-raised px-2 py-1.5 text-sm font-medium sm:max-w-none sm:px-3">{{ member.tenantName }}</span>
+      }
+
+      <span class="flex min-w-0 items-center gap-2 text-sm">
+        <span class="size-2 shrink-0 rounded-full bg-success" aria-hidden="true"></span>
+        <span class="hidden min-w-0 leading-tight sm:block">
+          <span class="block truncate text-ink">{{ member.email }}</span>
+          <span class="block text-xs capitalize text-muted">{{ member.role }}</span>
+        </span>
+      </span>
+
+      <button
+        class="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-sm font-medium hover:bg-raised disabled:opacity-50 sm:px-3"
+        type="button"
+        [disabled]="session.busy()"
+        (click)="session.change()"
+      >
+        Sign out
+      </button>
+    </div>
+  } @else {
+    <p class="ml-auto hidden text-[10px] font-semibold uppercase tracking-[0.28em] text-muted sm:block">Automate · Observe · Recover</p>
+  }
+</header>
+
+<main id="main" class="mx-auto w-full p-4 focus:outline-none has-[ops-battle-page]:p-0 sm:p-6 [&:not(:has(ops-battle-page))]:max-w-7xl" tabindex="-1">
+  @if (session.problem(); as problem) {
+    <p class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger" role="alert">{{ problem.title }}</p>
+    <button class="rounded-lg border border-line px-3 py-2 hover:bg-raised" type="button" (click)="session.restore()">Try again</button>
+  }
+  @if (session.data().member) {
+    <router-outlet />
+  } @else if (session.data().demoEnabled) {
+    <ops-demo-session />
+  } @else {
+    <p class="text-muted">Sign-in is unavailable in this environment.</p>
+  }
+</main>

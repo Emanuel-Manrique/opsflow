@@ -1,0 +1,108 @@
+<div class="grid grid-cols-1 min-h-[calc(100dvh-4rem)] lg:grid-cols-[14rem_minmax(0,1fr)]">
+  <aside class="min-w-0 h-80 border-b border-line bg-surface/40 lg:sticky lg:top-16 lg:h-[calc(100dvh-4rem)] lg:border-r lg:border-b-0">
+    <ops-workflow-sidebar [workflows]="allWorkflows()" [selectedId]="selectedId()" [loading]="loadingWorkflows()" (select)="choose($event)" />
+  </aside>
+
+  <div class="min-w-0 p-4 xl:p-5">
+    <header class="mb-5 flex flex-wrap items-center gap-4">
+      <div class="mr-auto">
+        <p class="sr-only text-[10px] font-semibold uppercase tracking-[0.24em] text-accent">Mission control</p>
+        <h1 class="text-2xl font-bold tracking-tight">OpsFlow Battle View</h1>
+        <p class="mt-1 text-xs text-muted">Follow the journey. See every attempt, obstacle and recovery.</p>
+      </div>
+      <div class="flex rounded-lg border border-line bg-surface p-1" role="group" aria-label="View mode">
+        <button class="rounded-md px-4 py-2 text-xs font-semibold" type="button" [class]="mode() === 'battle' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-muted hover:text-ink'" [attr.aria-pressed]="mode() === 'battle'" (click)="setMode('battle')">⚔ Battle View</button>
+        <button class="rounded-md px-4 py-2 text-xs font-semibold" type="button" [class]="mode() === 'operations' ? 'bg-blue-600 text-white' : 'text-muted hover:text-ink'" [attr.aria-pressed]="mode() === 'operations'" (click)="setMode('operations')">Operations View</button>
+      </div>
+      @if (session.canOperate()) {
+        <button class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 hover:bg-blue-500 disabled:opacity-50" type="button" [disabled]="busy() || !selected()" (click)="runNow()">{{ busy() ? 'Starting…' : 'Run now' }}</button>
+      }
+    </header>
+
+    @if (catalogueProblem(); as failure) {
+      <div class="mb-3 flex items-center justify-between rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger" role="alert">
+        <p>Could not load workflows: {{ failure.title }}</p>
+        <button type="button" class="underline" (click)="reloadWorkflows()">Try again</button>
+      </div>
+    }
+    @if (latestProblem(); as failure) { <p class="mb-3 text-sm text-danger" role="alert">Could not load the latest run: {{ failure.title }}</p> }
+    @if (actionProblem(); as failure) { <p class="mb-3 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger" role="alert">{{ failure.title }}</p> }
+    @if (store.connection() === 'reconnecting') {
+      <p class="mb-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning" role="status">Connection interrupted. Reconnecting to the run stream…</p>
+    } @else if (store.connection() === 'failed') {
+      <p class="mb-3 rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-danger" role="alert">Could not open this run. {{ store.problem()?.title }} Select a workflow to follow its latest run.</p>
+    }
+
+    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+      <div class="min-w-0 space-y-4">
+        <div class="flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs">
+          <p class="flex min-w-0 items-center gap-2 text-muted"><span class="size-1.5 rounded-full" [class]="store.live() ? 'bg-success' : 'bg-muted'"></span><span class="truncate">{{ selected()?.name ?? 'Select a workflow' }}</span><span class="text-line">/</span><span>{{ store.live() ? 'Live execution' : 'Execution overview' }}</span></p>
+          @if (pinned()) { <button class="text-accent hover:underline" type="button" (click)="followLatest()">Follow latest run</button> }
+          @else { <span class="text-muted">Following latest run · every 5s</span> }
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-xs" aria-label="Automatic schedule">
+          @if (selected(); as workflow) {
+            <span class="font-medium text-ink">◷ {{ describeCron(workflow.cronExpr) }}</span><span class="text-muted">{{ nextStart() }}</span>
+          } @else {
+            <span class="text-muted">◷ Loading schedule…</span>
+          }
+        </div>
+        @if (battle(); as state) {
+          @if (mode() === 'battle') {
+            @for (execution of [state]; track execution.runId) { <ops-battle-arena [battle]="execution" [schedule]="schedule()" [events]="store.events()" /> }
+          } @else {
+            <section class="min-h-[25rem] rounded-xl border border-line bg-surface p-6" aria-label="Run overview">
+              <p class="text-xs uppercase tracking-widest text-accent">Execution report</p>
+              <h2 class="mt-2 mb-6 text-xl font-semibold">Run overview</h2>
+              <dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+                <div><dt class="text-xs text-muted">Workflow</dt><dd class="mt-1 font-medium">{{ state.hero.name }}</dd></div>
+                <div><dt class="text-xs text-muted">Status</dt><dd class="mt-1 capitalize">{{ state.status }}</dd></div>
+                <div><dt class="text-xs text-muted">Attempt</dt><dd class="mt-1 tabular-nums">{{ state.hero.attempt }} of {{ state.hero.maxAttempts }}</dd></div>
+                <div><dt class="text-xs text-muted">Attempts remaining</dt><dd class="mt-1 tabular-nums">{{ state.hero.maxAttempts - state.hero.spentAttempts }}</dd></div>
+                <div><dt class="text-xs text-muted">Outcome</dt><dd class="mt-1 capitalize">{{ state.outcome }}</dd></div>
+                <div><dt class="text-xs text-muted">Obstacle</dt><dd class="mt-1" [class]="state.enemy?.defeated ? 'text-success' : state.enemy ? 'text-warning' : 'text-muted'">{{ state.enemy?.defeated ? 'Resolved · no active error' : state.enemy ? state.enemy.hit : 'None recorded' }}</dd></div>
+              </dl>
+            </section>
+          }
+        } @else {
+          <section class="relative flex min-h-[25rem] items-center justify-center overflow-hidden rounded-xl border border-line bg-[url('/art/battle-courtyard.png')] bg-cover bg-center p-6 text-center" aria-label="Battle arena ready">
+            <div class="absolute inset-0 bg-canvas/60"></div>
+            <div class="relative max-w-sm">
+              <p class="mb-3 font-pixel text-xs uppercase tracking-[0.2em] text-accent">Ready for the next mission</p>
+              <h2 class="text-xl font-semibold">{{ loadingWorkflows() ? 'Loading workflows…' : 'No run to show yet' }}</h2>
+              <p class="mt-3 text-sm text-muted">Pick a workflow and run it now, or wait for its next scheduled execution.</p>
+              <a class="mt-5 inline-block rounded-lg border border-line bg-surface px-4 py-2 text-sm hover:border-accent" routerLink="/workflows">Manage workflows →</a>
+            </div>
+          </section>
+        }
+
+        <section class="rounded-xl border border-line bg-surface" aria-label="Backend flow">
+          <header class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
+            <h2 class="text-xs font-semibold">Behind the battle</h2>
+            <span class="text-[10px] text-muted">Tenant outbox · shared Redis queue · refreshes every 10s</span>
+          </header>
+          <ol class="grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x">
+            <li class="min-w-0 px-4 py-3"><p class="text-[10px] uppercase tracking-wider text-muted">01 / Trigger</p><p class="mt-1 text-sm font-medium">Cron / Run now</p><p class="mt-1 truncate font-mono text-[10px] text-muted" [title]="selected()?.timezone ?? ''">{{ schedule() ?? 'No workflow' }} · {{ describeTimezone(selected()?.timezone ?? 'UTC') }}</p></li>
+            <li class="px-4 py-3"><p class="text-[10px] uppercase tracking-wider text-muted">02 / Persist</p><p class="mt-1 text-sm font-medium">Postgres outbox</p><p class="mt-1 text-xs text-accent">{{ store.metrics()?.outboxPending ?? '—' }} pending dispatch</p></li>
+            <li class="px-4 py-3"><p class="text-[10px] uppercase tracking-wider text-muted">03 / Dispatch</p><p class="mt-1 text-sm font-medium">Redis / BullMQ</p><p class="mt-1 text-xs" [class]="store.metrics()?.queue?.reachable ? 'text-success' : 'text-warning'">{{ store.metrics() ? (store.metrics()?.queue?.reachable ? 'Connected' : 'Unreachable') : 'Unavailable' }}</p></li>
+            <li class="px-4 py-3"><p class="text-[10px] uppercase tracking-wider text-muted">04 / Execute</p><p class="mt-1 text-sm font-medium">Worker → Action</p><p class="mt-1 text-xs text-muted">{{ store.metrics()?.queue?.reachable ? store.metrics()?.queue?.active : '—' }} active · {{ store.metrics()?.queue?.reachable ? store.metrics()?.queue?.delayed : '—' }} delayed</p></li>
+          </ol>
+        </section>
+
+        <div class="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+          <ops-event-stream [rows]="store.timeline()" [live]="store.live()" />
+          <ops-system-health />
+        </div>
+      </div>
+      <aside class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-1">
+        @if (currentRun(); as run) {
+          <ops-run-inspector [run]="run" [workflow]="selected()" [events]="store.events()" [busy]="busy()" (retry)="retry($event)" (cancel)="cancel($event)" />
+        } @else {
+          <section class="rounded-xl border border-line bg-surface p-4"><h2 class="font-semibold">Run Inspector</h2><p class="mt-3 text-sm text-muted">Select a run to inspect attempts, errors and its trace.</p></section>
+        }
+        @if (showChaosLab) { <ops-chaos-lab [target]="selected()" [busy]="busy()" (injected)="onInjected($event)" (recovered)="runNow()" /> }
+      </aside>
+    </div>
+  </div>
+</div>

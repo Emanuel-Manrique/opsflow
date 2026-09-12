@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc"
+  ],
+  "jsPlugins": [
+    "./eslint-plugins/ops.cjs"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "ops/no-multiline-import": "error",
+    "ops/no-multiline-destructuring": "error",
+    "ops/no-multiline-ternary": "error"
+  },
+  "env": {
+    "builtin": true
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "name": "web-angular-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/web-angular-e2e/src",
+  "implicitDependencies": [
+    "web-angular"
+  ],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/web-angular-e2e",
+        "commands": [
+          "tsc -p tsconfig.json --noEmit"
+        ],
+        "parallel": false
+      }
+    },
+    "e2e": {
+      "parallelism": true,
+      "dependsOn": [
+        "api:serve-e2e",
+        "worker:serve-e2e",
+        "web-angular:serve-e2e",
+        "e2e--wait-for-api",
+        "e2e--wait-for-worker",
+        "e2e--wait-for-webserver",
+        "e2e--wait-for-wiremock",
+        "orchestrator:serve-e2e"
+      ],
+      "cache": false
+    },
+    "e2e--wait-for-api": {
+      "executor": "@nx/playwright:wait-for-webserver",
+      "cache": false,
+      "dependsOn": [
+        {
+          "projects": [
+            "api"
+          ],
+          "target": "serve-e2e"
+        }
+      ],
+      "options": {
+        "servers": [
+          {
+            "url": "http://localhost:3200/api/health",
+            "timeout": 120000
+          }
+        ]
+      }
+    },
+    "e2e--wait-for-webserver": {
+      "executor": "@nx/playwright:wait-for-webserver",
+      "cache": false,
+      "dependsOn": [
+        {
+          "projects": [
+            "web-angular"
+          ],
+          "target": "serve-e2e"
+        }
+      ],
+      "options": {
+        "servers": [
+          {
+            "url": "http://localhost:4300",
+            "timeout": 120000
+          }
+        ]
+      }
+    },
+    "e2e--wait-for-worker": {
+      "executor": "@nx/playwright:wait-for-webserver",
+      "cache": false,
+      "dependsOn": [
+        {
+          "projects": [
+            "worker"
+          ],
+          "target": "serve-e2e"
+        }
+      ],
+      "options": {
+        "servers": [
+          {
+            "url": "http://localhost:3202/api/health",
+            "timeout": 120000
+          }
+        ]
+      }
+    },
+    "e2e--wait-for-wiremock": {
+      "executor": "@nx/playwright:wait-for-webserver",
+      "cache": false,
+      "options": {
+        "servers": [
+          {
+            "url": "http://localhost:8081/__admin/health",
+            "timeout": 60000
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    "type:e2e",
+    "scope:web"
+  ]
+}

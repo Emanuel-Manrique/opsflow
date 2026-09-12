@@ -1,0 +1,3 @@
+interface:
+  display_name: "Single-line call params"
+  short_description: "pN fragments for runtime calls, types in *.types.ts"

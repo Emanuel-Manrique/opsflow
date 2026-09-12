@@ -1,0 +1,5 @@
+{
+  "priority": 1,
+  "request": { "urlPathPattern": "/hooks/chaos/500", "method": "ANY" },
+  "response": { "status": 500, "jsonBody": { "chaos": "server error" } }
+}

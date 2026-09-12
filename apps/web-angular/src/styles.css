@@ -1,0 +1,91 @@
+@import 'tailwindcss';
+@source '../../../libs/ui/src';
+
+:root {
+  color-scheme: dark;
+  --ops-canvas: #080d15;
+  --ops-surface: #0c1420;
+  --ops-raised: #121e2e;
+  --ops-line: #243349;
+  --ops-ink: #e9effb;
+  --ops-muted: #94a5bf;
+  --ops-accent: #458aff;
+  --ops-success: #3de0a0;
+  --ops-warning: #ffc16b;
+  --ops-danger: #ff707b;
+  --ops-chaos: #cf9bff;
+}
+
+@theme inline {
+  --color-canvas: var(--ops-canvas);
+  --color-surface: var(--ops-surface);
+  --color-raised: var(--ops-raised);
+  --color-line: var(--ops-line);
+  --color-ink: var(--ops-ink);
+  --color-muted: var(--ops-muted);
+  --color-accent: var(--ops-accent);
+  --color-success: var(--ops-success);
+  --color-warning: var(--ops-warning);
+  --color-danger: var(--ops-danger);
+  --color-chaos: var(--ops-chaos);
+
+  --font-pixel: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace;
+}
+
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    @apply m-0 bg-canvas font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+/*
+ * Arena motion. Small, looping, and purely decorative: every state the animations
+ * hint at is also written out in text, so nothing is lost when they are switched off.
+ */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4%); }
+}
+@keyframes stagger {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-6%) rotate(-4deg); }
+  75% { transform: translateX(-3%) rotate(3deg); }
+}
+@keyframes cheer {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-10%) scale(1.04); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7%); }
+}
+@keyframes strike {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(-14%) scale(1.05); }
+}
+@keyframes vanish {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-18%) scale(0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes walk { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-5px) rotate(3deg); } }
+
+@keyframes arrival { from { left: 10%; } to { left: 76%; } }
+.animate-arrival { animation: arrival 1.8s ease-out; }
+@media (prefers-reduced-motion: reduce) { .animate-arrival { animation: none; } }

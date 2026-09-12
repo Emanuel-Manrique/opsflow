@@ -1,0 +1,66 @@
+<section class="rounded-xl border border-line bg-surface" aria-label="Chaos Lab">
+  <header class="border-b border-line px-4 py-3">
+    <h2 class="font-semibold">Chaos Lab</h2>
+    @if (target(); as workflow) {
+      <p class="mt-0.5 text-xs text-muted">Fails one run of <strong class="text-ink">{{ workflow.name }}</strong>. Its saved configuration and its schedule are left alone.</p>
+    } @else {
+      <p class="mt-0.5 text-xs text-muted">Select a workflow to fault one of its runs.</p>
+    }
+  </header>
+
+  <div class="grid gap-2 p-3">
+    @for (scenario of scenarios; track scenario.id) {
+      <button
+        class="rounded-lg border border-chaos/40 bg-chaos/5 px-3 py-2.5 text-left hover:bg-chaos/10 disabled:opacity-50"
+        type="button"
+        [disabled]="!allowed() || busy() || running() !== undefined"
+        [title]="scenario.effect"
+        (click)="inject(scenario.id)"
+      >
+        <span class="block text-sm font-semibold text-chaos">
+          {{ running() === scenario.id ? 'Injecting…' : scenario.label }}
+        </span>
+        <span class="mt-0.5 block text-xs text-muted">{{ scenario.effect }}</span>
+      </button>
+    }
+  </div>
+
+  @if (allowed()) {
+    <div class="border-t border-line p-3">
+      <button
+        class="w-full rounded-lg border border-success/40 bg-success/5 px-3 py-2.5 text-left hover:bg-success/10 disabled:opacity-50"
+        type="button"
+        [disabled]="busy() || running() !== undefined"
+        (click)="recovered.emit()"
+      >
+        <span class="block text-sm font-semibold text-success">Clear the fault</span>
+        <span class="mt-0.5 block text-xs text-muted">Runs {{ target()?.name }} again with its own action. Nothing was changed, so this just works.</span>
+      </button>
+    </div>
+  }
+
+  @if (!session.canOperate()) {
+    <p class="px-4 pb-3 text-xs text-muted">Your role can watch runs, not start them.</p>
+  } @else if (!target()) {
+    <p class="px-4 pb-3 text-xs text-muted">Pick a workflow in the sidebar first.</p>
+  }
+  @if (problem(); as failure) {
+    <p class="mx-3 mb-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{{ failure.title }}</p>
+  }
+
+  <details class="border-t border-line px-4 py-3 text-xs text-muted">
+    <summary class="cursor-pointer font-medium">Infrastructure tests</summary>
+    <p class="mt-2">
+      A worker crash, a Redis outage and a scheduler race are infrastructure events. Rather than
+      fake a button for them, run these and watch the console react:
+    </p>
+    <pre class="mt-2 overflow-x-auto rounded-lg bg-raised p-2.5 font-mono text-[11px] text-ink">docker compose stop redis     # outbox holds; runs resume on restart
+docker compose start redis
+pnpm nx serve orchestrator    # a second instance: SKIP LOCKED keeps one run per occurrence</pre>
+  </details>
+
+  <p class="flex items-start gap-2 border-t border-line px-4 py-2.5 text-xs text-chaos">
+    <span aria-hidden="true">⚠</span>
+    Chaos mode is available only in non-production environments.
+  </p>
+</section>

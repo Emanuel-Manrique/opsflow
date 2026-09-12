@@ -1,0 +1,103 @@
+<header class="mb-6 flex items-center justify-between gap-4">
+  <div><p class="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">Execution log</p><h1 class="text-2xl font-bold tracking-tight">Run</h1></div>
+  <a class="text-accent" routerLink="/runs">Back to runs</a>
+</header>
+
+@if (loading() && !run()) {
+  <p class="rounded-lg border border-line bg-surface px-4 py-3 text-muted" role="status">
+    Loading run…
+  </p>
+} @else if (!run() && problem(); as failure) {
+  <div
+    class="flex items-center justify-between gap-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger"
+    role="alert"
+  >
+    <p>{{ failure.title }}</p>
+    <button class="rounded-lg border border-current px-3 py-1.5" type="button" (click)="refresh()">
+      Try again
+    </button>
+  </div>
+} @else if (run(); as current) {
+  <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]"><section class="min-w-0 rounded-xl border border-line bg-surface p-5">
+    <div class="mb-5 flex items-center justify-between gap-4">
+      <p class="flex items-center gap-3 text-lg font-semibold" role="status" aria-label="Run status"><ops-status-badge [status]="current.status" /></p>
+      <button class="rounded-lg border border-line px-3 py-1.5 disabled:opacity-50" type="button" [disabled]="loading() || cancelling()" [attr.aria-busy]="loading()" (click)="refresh()">
+        Refresh run
+      </button>
+    </div>
+
+    @if (cancellable()) {
+      <button class="mb-5 rounded-lg border border-danger/40 px-3 py-1.5 text-danger disabled:opacity-50" type="button" [disabled]="cancelling() || loading()" [attr.aria-busy]="cancelling()" (click)="cancel()">
+        {{ cancelling() ? 'Requesting cancellation…' : 'Cancel run' }}
+      </button>
+    } @else if (current.status === 'cancelling') {
+      <p class="mb-5 text-sm text-muted">Cancellation requested. Waiting for the worker to stop.</p>
+    }
+    @if (waiting(); as reason) {
+      <p class="mb-5 rounded-lg bg-warning/10 px-4 py-3 text-warning" role="status">{{ reason }}</p>
+    }
+    @if (retryable()) {
+      <p class="mb-3 text-sm">Automatic retries have stopped. Retrying creates a new run and may repeat the external action.</p>
+      <button class="mb-5 rounded-lg border border-line px-3 py-1.5 hover:bg-raised disabled:opacity-50" type="button" [disabled]="startingRetry()" (click)="retry()">{{ startingRetry() ? 'Starting retry…' : 'Retry run' }}</button>
+    }
+    @if (current.status === 'retrying') {
+      <p class="mb-5 text-sm" role="status">Waiting before the next attempt…</p>
+    }
+    @if (reconnecting()) {
+      <p class="mb-5 text-sm text-muted" role="status">Connection interrupted. Reconnecting…</p>
+    } @else if (problem(); as failure) {
+      <p class="mb-5 text-danger" role="alert">Updates stopped. {{ failure.title }}</p>
+    }
+    @if (actionProblem(); as failure) {
+      <p class="mb-5 text-danger" role="alert">{{ failure.title }}</p>
+    }
+
+    <a class="mb-4 block text-accent" routerLink="/battle" [queryParams]="{ workflow: current.workflowId, run: current.id }">Watch in Battle View ↗</a>
+    <p class="mb-4 text-sm text-muted">{{ current.scheduledFor ? 'Started automatically by cron' : 'Started manually' }}</p>
+    @if (current.status === 'succeeded' && current.attempt > 1) { <p class="mb-4 rounded-lg bg-success/10 p-3 text-success">Recovered automatically. The earlier error is resolved.</p> }
+    <p class="mb-4 text-sm">Attempts started: {{ current.attempt }}</p>
+    @if (current.retryOf) {
+      <a class="mb-4 block text-accent" [routerLink]="['/runs', current.retryOf]">View original run</a>
+    }
+    <dl class="grid gap-4 sm:grid-cols-2">
+      <div class="sm:col-span-2">
+        <dt class="text-sm text-muted">Run ID</dt>
+        <dd class="break-all font-mono text-sm">{{ current.id }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm text-muted">Workflow</dt>
+        <dd>
+          @if (session.canEdit()) {
+            <a class="text-accent" [routerLink]="['/workflows', current.workflowId, 'edit']">
+              {{ current.workflowName }}
+            </a>
+          } @else {
+            {{ current.workflowName }}
+          }
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-muted">Created</dt>
+        <dd><time [attr.datetime]="current.createdAt">{{ current.createdAt | date: 'medium' }}</time></dd>
+      </div>
+      @if (current.startedAt) {
+        <div>
+          <dt class="text-sm text-muted">Started</dt>
+          <dd><time [attr.datetime]="current.startedAt">{{ current.startedAt | date: 'medium' }}</time></dd>
+        </div>
+      }
+      @if (current.finishedAt) {
+        <div>
+          <dt class="text-sm text-muted">Finished</dt>
+          <dd><time [attr.datetime]="current.finishedAt">{{ current.finishedAt | date: 'medium' }}</time></dd>
+        </div>
+      }
+    </dl>
+
+    @if (current.error) {
+      <p class="mt-5 rounded-lg bg-danger/10 px-4 py-3 text-danger" role="alert">
+        {{ current.error }}
+      </p>
+    }
+  </section><ops-event-stream [rows]="timeline()" [live]="live()" /></div>
+}

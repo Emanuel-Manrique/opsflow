@@ -1,0 +1,83 @@
+<section class="rounded-xl border border-line bg-surface" aria-label="Run Inspector">
+  <header class="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+    <h2 class="font-semibold">Run Inspector</h2>
+    <code class="rounded bg-raised px-2 py-0.5 text-xs text-muted">RUN-{{ shortId() }}</code>
+  </header>
+
+  <dl class="grid grid-cols-[4.5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-2.5 px-4 py-4 text-sm">
+    <dt class="text-muted">Workflow</dt>
+    <dd class="truncate text-right font-medium" [title]="run().workflowName">{{ run().workflowName }}</dd>
+
+    <dt class="text-muted">Status</dt>
+    <dd class="text-right" role="status" aria-label="Run status"><ops-status-badge [status]="run().status" /></dd>
+
+    <dt class="text-muted">Trigger</dt><dd class="text-right">{{ run().scheduledFor ? 'Automatic cron' : 'Manual' }}</dd>
+    <dt class="text-muted">Attempts</dt>
+    <dd class="text-right tabular-nums">{{ run().attempt }} / {{ maxAttempts }}</dd>
+
+    <dt class="text-muted">Started</dt>
+    <dd class="text-right">
+      @if (run().startedAt; as started) {
+        <time [attr.datetime]="started">{{ started | date: 'short' }}</time>
+      } @else { — }
+    </dd>
+
+    <dt class="text-muted">Duration</dt>
+    <dd class="text-right tabular-nums">{{ duration() ?? '—' }}</dd>
+
+    @if (run().status === 'retrying') {
+      <dt class="text-muted">Backoff</dt><dd class="text-right text-warning">{{ backoff() ?? 'Retry scheduled' }}</dd>
+    }
+    @if (workflow(); as selected) {
+      <dt class="text-muted">Schedule</dt><dd class="text-right font-mono text-xs" [title]="selected.timezone">{{ describeCron(selected.cronExpr) }}<span class="mt-1 block text-muted">{{ describeTimezone(selected.timezone) }}</span></dd>
+    }
+    <dt class="text-muted">Queue</dt><dd class="text-right font-mono text-xs">{{ queue }}</dd>
+    <dt class="text-muted">Trace ID</dt>
+    <dd class="truncate text-right font-mono text-xs" [title]="traceId() ?? ''">{{ traceId() ?? '—' }}</dd>
+
+    @if (run().retryOf; as original) {
+      <dt class="text-muted">Retry of</dt>
+      <dd class="text-right"><a class="font-mono text-xs text-accent" [routerLink]="['/runs', original]">{{ original.slice(0, 8) }}</a></dd>
+    }
+
+    @if (lastError(); as error) {
+      <dt class="text-muted">Current error</dt>
+      <dd class="wrap-anywhere text-right text-danger">{{ error }}</dd>
+    }
+  </dl>
+
+  @if (recovered()) { <p class="mx-4 mb-4 rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success" role="status">Recovered automatically on attempt {{ run().attempt }}. No active error.</p> }
+  @if (problem(); as failure) {
+    <p class="mx-4 mb-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{{ failure.title }}</p>
+  }
+
+  <div class="flex flex-wrap gap-2 border-t border-line px-4 py-3">
+    @if (canRetry()) {
+      <button
+        class="flex-1 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent/90 disabled:opacity-50"
+        type="button"
+        [disabled]="busy()"
+        (click)="retry.emit(run().id)"
+      >
+        {{ busy() ? 'Starting…' : 'Retry now' }}
+      </button>
+    }
+    @if (canCancel()) {
+      <button
+        class="flex-1 rounded-lg border border-danger/40 px-3 py-2 text-sm font-semibold text-danger hover:bg-danger/10 disabled:opacity-50"
+        type="button"
+        [disabled]="busy()"
+        (click)="cancel.emit(run().id)"
+      >
+        Cancel
+      </button>
+    }
+    <a class="w-full rounded-lg border border-line px-3 py-2 text-center text-sm font-medium hover:bg-raised" [routerLink]="['/runs', run().id]">
+      Open run
+    </a>
+    <a class="flex-1 rounded-lg border border-line px-3 py-2 text-center text-sm font-medium hover:bg-raised" [routerLink]="['/runs']" [queryParams]="{ workflowId: run().workflowId }">
+      Run history
+    </a>
+    @if (session.canEdit()) { <a class="w-full rounded-lg border border-line px-3 py-2 text-center text-sm font-medium hover:bg-raised" [routerLink]="['/workflows', run().workflowId, 'edit']">Configure workflow ↗</a> }
+  </div>
+</section>

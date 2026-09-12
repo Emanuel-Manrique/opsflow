@@ -1,0 +1,105 @@
+<div class="mb-1 grid gap-4 sm:grid-cols-2">
+  <label class="grid gap-2 text-sm">
+    <span class="text-muted">Repeat</span>
+    <select
+      class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-ink"
+      [value]="frequency()"
+      [disabled]="disabled() || readonly()"
+      (change)="setFrequency($event)"
+    >
+      <option value="minute">Every minute</option>
+      <option value="interval">Every few minutes</option>
+      <option value="hourly">Every hour</option>
+      <option value="daily">Every day</option>
+      <option value="weekdays">Monday to Friday</option>
+      <option value="weekly">Every week</option>
+      <option value="custom">Custom cron expression</option>
+    </select>
+  </label>
+  @if (frequency() === 'interval') {
+    <label class="grid gap-2 text-sm">
+      <span class="text-muted">Interval</span>
+      <select class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5" [value]="parts()[0].slice(2)" [disabled]="disabled() || readonly()" (change)="setInterval($event)">
+        @for (minute of [5, 10, 15, 30]; track minute) {
+          <option [value]="minute" [selected]="parts()[0].slice(2) === (minute + '')">Every {{ minute }} minutes</option>
+        }
+      </select>
+    </label>
+  }
+  @if (frequency() === 'hourly') {
+    <label class="grid gap-2 text-sm">
+      <span class="text-muted">Minute of the hour</span>
+      <input class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5" type="number" min="0" max="59" [value]="parts()[0]" [disabled]="disabled() || readonly()" (input)="setMinute($event)" />
+    </label>
+  }
+  @if (frequency() === 'daily' || frequency() === 'weekdays' || frequency() === 'weekly') {
+    <label class="grid gap-2 text-sm">
+      <span class="text-muted">At time</span>
+      <input class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5" type="time" [value]="time()" [disabled]="disabled() || readonly()" (input)="setTime($event)" />
+    </label>
+  }
+  @if (frequency() === 'weekly') {
+    <label class="grid gap-2 text-sm sm:col-span-2">
+      <span class="text-muted">Day of week</span>
+      <select class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5" [value]="parts()[4] === '7' ? '0' : parts()[4]" [disabled]="disabled() || readonly()" (change)="setDay($event)">
+        @for (day of weekdays; track day; let index = $index) {
+          <option [value]="index" [selected]="(parts()[4] === '7' ? '0' : parts()[4]) === (index + '')">{{ day }}</option>
+        }
+      </select>
+    </label>
+  }
+</div>
+
+<div class="flex items-start gap-3 rounded-xl border border-accent/25 bg-accent/5 px-4 py-3">
+  <svg class="mt-0.5 size-4 shrink-0 text-accent" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.6" />
+    <path d="M8 3.5v3M16 3.5v3M4 10h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+  </svg>
+  <div>
+    <p class="text-sm font-semibold text-accent">{{ description() }}</p>
+    <p class="mt-1 text-xs text-muted">Times use the timezone selected below.</p>
+  </div>
+</div>
+
+<label class="text-sm text-muted" [for]="inputId">{{ label() }}</label>
+<div class="relative">
+  <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted" aria-hidden="true">
+    <svg class="size-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" /><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+  </span>
+  <input
+    [id]="inputId"
+    class="w-full rounded-xl border border-line bg-canvas py-2.5 pr-3.5 pl-10 font-mono text-sm"
+    type="text"
+    spellcheck="false"
+    autocomplete="off"
+    placeholder="0 3 * * *"
+    [value]="value()"
+    [disabled]="disabled()"
+    [readOnly]="readonly()"
+    [class.border-2]="invalid()"
+    [class.border-danger]="invalid()"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
+    [attr.aria-describedby]="summaryId"
+    (input)="onInput($event)"
+  />
+</div>
+<p [id]="summaryId" class="min-h-5 text-sm" role="status">
+  @if (valid()) {
+    <span class="inline-flex items-center gap-1.5 font-medium text-success">
+      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 5 5 9-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      Valid schedule.
+    </span>
+  } @else if (value().trim()) {
+    Not a schedule we can read yet.
+  } @else {
+    Five fields: minute, hour, day of month, month, day of week.
+  }
+</p>
+<div class="grid grid-cols-5 gap-2 text-center" aria-hidden="true">
+  @for (field of ['MINUTE', 'HOUR', 'DAY', 'MONTH', 'WEEKDAY']; track field; let index = $index) {
+    <span class="rounded-xl border border-line bg-raised px-1 py-2.5">
+      <code class="block text-sm text-ink">{{ parts()[index] || '—' }}</code>
+      <span class="mt-1 block text-[9px] tracking-wider text-muted">{{ field }}</span>
+    </span>
+  }
+</div>

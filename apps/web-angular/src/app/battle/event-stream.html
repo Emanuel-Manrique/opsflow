@@ -1,0 +1,40 @@
+<section class="flex h-full flex-col rounded-xl border border-line bg-surface" aria-label="Event Stream">
+  <header class="flex items-center gap-3 border-b border-line px-4 py-3">
+    <h2 class="font-semibold">Event Stream</h2>
+    @if (live()) {
+      <span class="flex items-center gap-1.5 text-xs text-success" role="status">
+        <span class="size-1.5 animate-pulse rounded-full bg-success" aria-hidden="true"></span>
+        Live
+      </span>
+    } @else {
+      <span class="text-xs text-muted">{{ rows().length ? 'Recorded' : 'Idle' }}</span>
+    }
+    <label class="ml-auto text-xs">
+      <span class="sr-only">Filter events</span>
+      <select class="rounded-lg border border-line bg-raised px-2 py-1 capitalize" [value]="filter()" (change)="select($event)">
+        @for (option of filters; track option) {
+          <option [value]="option" [selected]="option === filter()">{{ option === 'all' ? 'All events' : option }}</option>
+        }
+      </select>
+    </label>
+  </header>
+
+  <ol class="max-h-80 flex-1 overflow-y-auto px-2 py-2 text-sm" aria-live="polite" aria-label="Run events, newest first">
+    @for (row of visible(); track row.id) {
+      <li class="rounded-lg px-2 py-1.5 hover:bg-raised/60"><details><summary class="flex cursor-pointer items-baseline gap-3">
+        <span class="mt-1.5 size-1.5 shrink-0 rounded-full" [class]="dot(row)" aria-hidden="true"></span>
+        <time class="shrink-0 tabular-nums text-xs text-muted" [attr.datetime]="row.at">{{ row.at | date: 'HH:mm:ss' }}</time>
+        <code class="shrink-0 text-xs font-semibold" [class]="text(row)">{{ row.type }}</code>
+        <span class="min-w-0 flex-1 truncate text-muted" [title]="row.message">{{ row.message }}</span>
+        </summary><div class="ml-4 mt-2 space-y-1 border-l border-line py-2 pl-3 text-xs text-muted">
+          <p class="text-ink">{{ row.message }}</p>
+          <p>Attempt {{ row.event.attempt ?? '—' }} · {{ row.at | date: 'medium' }}</p>
+          @if (row.event.traceId; as trace) { <p class="break-all font-mono">Trace: {{ trace }}</p> }
+          @if (row.event.errorCode; as error) { <p class="text-danger">{{ error }}</p> }
+        </div></details>
+      </li>
+    } @empty {
+      <li class="px-3 py-8 text-center text-muted">No events recorded for this run yet.</li>
+    }
+  </ol>
+</section>

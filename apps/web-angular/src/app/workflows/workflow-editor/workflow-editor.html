@@ -1,0 +1,243 @@
+<header class="mb-8 flex flex-wrap items-start justify-between gap-4">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight">{{ isEditing() ? 'Edit workflow' : 'New workflow' }}</h1>
+    <p class="mt-2 max-w-xl text-sm text-muted">
+      {{ isEditing() ? 'Update what should happen and when to run it.' : 'Define what should happen and when to run it.' }}
+    </p>
+  </div>
+  <a class="inline-flex items-center gap-1.5 text-sm text-ink/80 no-underline hover:text-ink" routerLink="/workflows">
+    <span aria-hidden="true">←</span>
+    Back to workflows
+  </a>
+</header>
+
+@if (loading()) {
+  <p class="rounded-xl border border-line bg-surface px-4 py-3 text-muted" role="status">
+    Loading workflow…
+  </p>
+} @else if (!loaded() && problem(); as failure) {
+  <div
+    class="flex items-center justify-between gap-4 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-danger"
+    role="alert"
+  >
+    <p>{{ failure.title }}</p>
+    <button class="rounded-lg border border-current px-3 py-1.5" type="button" (click)="retry()">
+      Try again
+    </button>
+  </div>
+} @else {
+  @if (problem(); as failure) {
+    <div
+      class="mb-6 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-danger"
+      role="alert"
+    >
+      <p>{{ failure.title }}</p>
+      @if (failure.errors) {
+        <ul class="mt-2 list-disc pl-5">
+          @for (entry of failure.errors | keyvalue; track entry.key) {
+            <li>{{ entry.key }}: {{ entry.value.join(' ') }}</li>
+          }
+        </ul>
+      }
+    </div>
+  }
+
+  <form class="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]" (submit)="$event.preventDefault(); save()">
+    <div class="grid min-w-0 gap-8">
+      <section class="grid gap-5">
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-line bg-raised text-[11px] font-semibold tabular-nums text-muted" aria-hidden="true">01</span>
+          <div>
+            <h2 class="text-base font-semibold">Define the work</h2>
+            <p class="mt-0.5 text-sm text-muted">Give the workflow a name and choose the action the worker will execute.</p>
+          </div>
+        </div>
+
+        <label class="grid gap-2">
+          <span class="text-sm text-muted">Name</span>
+          <input
+            class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60"
+            type="text"
+            [formField]="form.name"
+            autocomplete="off"
+            placeholder="e.g. Daily API health check"
+          />
+          @if (form.name().touched() && form.name().errors().length > 0) {
+            <p class="text-sm font-semibold text-danger" role="alert">
+              {{ form.name().errors()[0].message }}
+            </p>
+          }
+        </label>
+
+        <label class="grid gap-2">
+          <span class="text-sm text-muted">Action</span>
+          <select
+            class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-sm text-ink"
+            [formField]="form.actionType"
+          >
+            @for (type of actionTypes; track type) {
+              <option [value]="type">{{ type === 'noop' ? 'Test run · no external request' : 'HTTP webhook · call an endpoint' }}</option>
+            }
+          </select>
+        </label>
+
+        @if (form.actionType().value() === 'webhook') {
+          <label class="grid gap-2">
+            <span class="text-sm text-muted">Webhook URL</span>
+            <input
+              class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60"
+              type="url"
+              [formField]="form.webhookUrl"
+              placeholder="http://localhost:8081/hooks/demo"
+            />
+            @if (form.webhookUrl().errors().length > 0) {
+              <p class="text-sm font-semibold text-danger" role="alert">
+                {{ form.webhookUrl().errors()[0].message }}
+              </p>
+            }
+          </label>
+
+          <label class="grid gap-2">
+            <span class="text-sm text-muted">Method</span>
+            <select
+              class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-sm text-ink"
+              [formField]="form.webhookMethod"
+            >
+              @for (method of httpMethods; track method) {
+                <option [value]="method">{{ method }}</option>
+              }
+            </select>
+          </label>
+        }
+      </section>
+
+      <section class="grid gap-5">
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-line bg-raised text-[11px] font-semibold tabular-nums text-muted" aria-hidden="true">02</span>
+          <div>
+            <h2 class="text-base font-semibold">Set the schedule</h2>
+            <p class="mt-0.5 text-sm text-muted">Choose a frequency, or write a custom cron expression.</p>
+          </div>
+        </div>
+
+        <ops-cron-field [formField]="form.cronExpr" />
+        @if (form.cronExpr().touched() && form.cronExpr().errors().length > 0) {
+          <p class="-mt-2 text-sm font-semibold text-danger" role="alert">
+            {{ form.cronExpr().errors()[0].message }}
+          </p>
+        }
+
+        <label class="grid gap-2">
+          <span class="text-sm text-muted">Timezone</span>
+          <select
+            class="w-full rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-sm text-ink"
+            [formField]="form.timezone"
+          >
+            @for (zone of timezoneOptions(); track zone) {
+              <option [value]="zone">{{ zone }}</option>
+            }
+          </select>
+          @if (form.timezone().touched() && form.timezone().errors().length > 0) {
+            <p class="text-sm font-semibold text-danger" role="alert">
+              {{ form.timezone().errors()[0].message }}
+            </p>
+          }
+        </label>
+
+        <label class="flex items-start gap-3 rounded-xl border border-line bg-raised/60 px-4 py-3">
+          <input class="mt-1 size-4 accent-accent" type="checkbox" [formField]="form.enabled" />
+          <span>
+            <span class="block text-sm font-semibold">Enabled</span>
+            <span class="mt-0.5 block text-sm text-muted">Run automatically on this schedule. Leave off for manual runs only.</span>
+          </span>
+        </label>
+      </section>
+    </div>
+
+    <aside class="grid gap-6 rounded-2xl border border-accent/45 bg-surface p-6 shadow-lg shadow-blue-600/5 lg:sticky lg:top-20" aria-label="Workflow review">
+      <div class="flex items-start gap-3">
+        <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-line bg-raised text-[11px] font-semibold tabular-nums text-muted" aria-hidden="true">03</span>
+        <div class="min-w-0">
+          <h2 class="text-base font-semibold">Review & save</h2>
+          <p class="mt-0.5 break-words text-sm text-muted">{{ model().name || 'Your workflow' }}</p>
+        </div>
+      </div>
+
+      <dl class="grid gap-5 text-sm">
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg text-accent" aria-hidden="true">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none"><path d="M13 3 5 13h6l-1 8 9-12h-6l0-6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+          </span>
+          <div class="min-w-0">
+            <dt class="text-muted">Action</dt>
+            <dd class="mt-0.5 wrap-anywhere">{{ actionCopy() }}</dd>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg text-accent" aria-hidden="true">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.6" /><path d="M8 3.5v3M16 3.5v3M4 10h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+          </span>
+          <div class="min-w-0">
+            <dt class="text-muted">Schedule</dt>
+            <dd class="mt-0.5">{{ describeCron(model().cronExpr) }}</dd>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg text-accent" aria-hidden="true">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" /><path d="M10 9.5v5l4-2.5-4-2.5Z" fill="currentColor" /></svg>
+          </span>
+          <div class="min-w-0">
+            <dt class="text-muted">Automatic execution</dt>
+            <dd class="mt-0.5 font-semibold" [class]="model().enabled ? 'text-success' : 'text-warning'">{{ enabledCopy() }}</dd>
+          </div>
+        </div>
+      </dl>
+
+      @if (upcomingRuns().length > 0) {
+        <div>
+          <p class="mb-2 flex items-center gap-2 text-sm text-muted">
+            <svg class="size-4 text-accent" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 7h8M8 12h8M8 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+            Next runs · {{ model().timezone }}
+          </p>
+          <ul class="grid gap-2 text-sm tabular-nums">
+            @for (run of upcomingRuns(); track run.getTime()) {
+              <li><time [attr.datetime]="run.toISOString()">{{ formatOccurrence(run) }}</time></li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="grid gap-3 text-xs leading-relaxed text-muted">
+        <p>{{ model().enabled ? 'The scheduler checks every 30 seconds. An occurrence may start up to 30 seconds after its scheduled time.' : 'The dates above are a preview. Enable the workflow to schedule these runs.' }}</p>
+        <p>Failed actions retry automatically, up to {{ maxAttempts }} attempts with increasing waits. Follow each attempt in Battle View.</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          class="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-progress disabled:opacity-50"
+          type="submit"
+          [disabled]="saving() || deleting()"
+        >
+          {{ saving() ? 'Saving…' : isEditing() ? 'Save changes' : 'Create workflow' }}
+        </button>
+        <a class="inline-flex items-center rounded-full border border-line px-5 py-2.5 text-sm font-semibold text-ink no-underline hover:bg-raised" routerLink="/workflows">Cancel</a>
+      </div>
+
+      @if (isEditing()) {
+        <div class="border-t border-line pt-4">
+          @if (pendingDelete()) {
+            <p class="mb-3 text-sm text-danger">This deletes the workflow and its run history.</p>
+            <div class="flex flex-wrap items-center gap-3">
+              <button class="rounded-full bg-danger px-4 py-2 text-sm font-semibold text-white hover:bg-danger/90 disabled:opacity-50" type="button" [disabled]="deleting()" (click)="confirmDelete()">
+                {{ deleting() ? 'Deleting…' : 'Confirm delete' }}
+              </button>
+              <button class="text-sm text-muted hover:text-ink" type="button" [disabled]="deleting()" (click)="cancelDelete()">Keep workflow</button>
+            </div>
+          } @else {
+            <button class="text-sm text-danger hover:underline" type="button" [disabled]="saving() || deleting()" (click)="askDelete()">Delete workflow</button>
+          }
+        </div>
+      }
+    </aside>
+  </form>
+}

@@ -1,0 +1,37 @@
+{
+  "name": "api-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "tags": [
+    "type:e2e",
+    "scope:api"
+  ],
+  "implicitDependencies": [
+    "api",
+    "testing"
+  ],
+  "targets": {
+    "e2e": {
+      "dependsOn": [
+        "api:build",
+        "api:serve-e2e",
+        "orchestrator:serve-e2e",
+        "worker:serve-e2e"
+      ],
+      "options": {
+        "coverage.reportsDirectory": "../../coverage/apps/api-e2e"
+      },
+      "cache": false
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/api-e2e",
+        "commands": [
+          "tsc -p tsconfig.spec.json --noEmit"
+        ],
+        "parallel": false
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "priority": 1,
+  "request": { "urlPath": "/hooks/chaos/recovery", "method": "ANY", "headers": { "X-Opsflow-Attempt": { "equalTo": "1" } } },
+  "response": { "status": 500, "fixedDelayMilliseconds": 1500, "jsonBody": { "chaos": "transient error" } }
+}

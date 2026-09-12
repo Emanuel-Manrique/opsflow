@@ -1,0 +1,141 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "analytics": false,
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
+    "production": [
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/tsconfig.spec.json",
+      "!{projectRoot}/src/test-setup.[jt]s",
+      "!{projectRoot}/test-setup.[jt]s"
+    ],
+    "sharedGlobals": []
+  },
+  "targetDefaults": {
+    "@angular/build:application": {
+      "cache": true,
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
+    },
+    "@angular/build:unit-test": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production"
+      ]
+    },
+    "typecheck": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/tsconfig.base.json"
+      ]
+    },
+    "e2e": [
+      {
+        "filter": {
+          "plugin": "@nx/vitest"
+        },
+        "outputs": [
+          "{projectRoot}/{options.coverage.reportsDirectory}",
+          "{workspaceRoot}/coverage/{projectRoot}"
+        ],
+        "options": {
+          "config": "./vitest.config.mts"
+        }
+      }
+    ]
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/oxlint",
+      "options": {
+        "targetName": "lint"
+      }
+    },
+    {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e"
+      }
+    },
+    {
+      "plugin": "@nx/webpack/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "serveTargetName": "serve",
+        "previewTargetName": "preview",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps",
+        "serveStaticTargetName": "serve-static"
+      }
+    },
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "boundaries"
+      }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "options": {
+        "testMode": "run",
+        "testTargetName": "test"
+      },
+      "include": [
+        "apps/api/**/*",
+        "apps/orchestrator/**/*",
+        "apps/worker/**/*",
+        "libs/contracts/**/*",
+        "libs/domain/**/*",
+        "libs/persistence/**/*",
+        "libs/testing/**/*",
+        "libs/ui/**/*",
+        "libs/observability/**/*"
+      ]
+    },
+    {
+      "plugin": "@nx/vitest",
+      "options": {
+        "testMode": "run",
+        "testTargetName": "e2e"
+      },
+      "include": [
+        "apps/api-e2e/**/*",
+        "apps/orchestrator-e2e/**/*",
+        "apps/worker-e2e/**/*"
+      ]
+    }
+  ],
+  "generators": {
+    "@nx/angular:application": {
+      "e2eTestRunner": "playwright",
+      "linter": "oxlint",
+      "style": "css",
+      "unitTestRunner": "vitest-angular"
+    },
+    "@nx/angular:library": {
+      "linter": "oxlint",
+      "unitTestRunner": "vitest-analog",
+      "prefix": "ops"
+    },
+    "@nx/angular:component": {
+      "style": "css",
+      "prefix": "ops"
+    },
+    "@nx/js:library": {
+      "bundler": "none",
+      "unitTestRunner": "vitest"
+    }
+  }
+}

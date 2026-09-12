@@ -1,0 +1,35 @@
+{
+  "name": "orchestrator-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "tags": [
+    "type:e2e",
+    "scope:orchestrator"
+  ],
+  "implicitDependencies": [
+    "orchestrator",
+    "testing"
+  ],
+  "targets": {
+    "e2e": {
+      "dependsOn": [
+        "orchestrator:serve-e2e",
+        "api:serve-e2e"
+      ],
+      "options": {
+        "coverage.reportsDirectory": "../../coverage/apps/orchestrator-e2e"
+      },
+      "cache": false
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/orchestrator-e2e",
+        "commands": [
+          "tsc -p tsconfig.spec.json --noEmit"
+        ],
+        "parallel": false
+      }
+    }
+  }
+}

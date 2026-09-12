@@ -1,0 +1,290 @@
+<header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <p class="mb-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-accent">Automation studio</p>
+    <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Workflows</h1>
+    <p class="mt-2 max-w-xl text-sm text-muted">
+      Configure schedules, timezones and actions. Follow execution in
+      <a class="text-accent hover:underline" routerLink="/battle">Battle View</a>.
+    </p>
+  </div>
+  @if (session.canEdit()) {
+    <a
+      class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-lg shadow-blue-600/15 hover:bg-blue-500"
+      routerLink="new"
+    >
+      <span aria-hidden="true">＋</span>
+      New workflow
+    </a>
+  }
+</header>
+
+@if (editDenied()) {
+  <p class="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-warning" role="status">
+    Your role can view workflows, not create or edit them.
+  </p>
+}
+
+@if (!isLoading() && !problem()) {
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <ul class="flex flex-wrap gap-3" aria-label="Catalogue summary">
+      @for (tile of stats(); track tile.label) {
+        <li class="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+          <span class="flex size-9 items-center justify-center rounded-lg border border-line bg-raised text-accent" aria-hidden="true">
+            @switch (tile.label) {
+              @case ('Active workflows') {
+                <svg class="size-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" /><path d="M10 9.5 16 12l-6 2.5v-5Z" fill="currentColor" /></svg>
+              }
+              @case ('Paused workflows') {
+                <svg class="size-4" viewBox="0 0 24 24" fill="none"><path d="M9 6v12M15 6v12" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+              }
+              @default {
+                <svg class="size-4" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="12" r="2.2" stroke="currentColor" stroke-width="1.6" /><circle cx="17" cy="7" r="2.2" stroke="currentColor" stroke-width="1.6" /><circle cx="17" cy="17" r="2.2" stroke="currentColor" stroke-width="1.6" /><path d="M9 12h6M15.2 8.6 8.8 11M15.2 15.4 8.8 13" stroke="currentColor" stroke-width="1.6" /></svg>
+              }
+            }
+          </span>
+          <span>
+            <span class="block text-lg font-semibold tabular-nums">{{ tile.value }}</span>
+            <span class="block text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">{{ tile.label }}</span>
+            <span class="block text-xs text-muted">{{ tile.scope }}</span>
+          </span>
+        </li>
+      }
+    </ul>
+    <p class="hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-muted lg:block">Automate / Test / Stay resilient</p>
+  </div>
+}
+
+<form class="mb-6 grid gap-3 rounded-xl border border-line bg-surface p-3 sm:grid-cols-3" (submit)="$event.preventDefault()" role="search">
+  <label class="grid gap-1.5">
+    <span class="flex items-center gap-1.5 text-xs font-medium text-muted">
+      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.6" /><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+      Search
+    </span>
+    <input
+      class="rounded-lg border border-line bg-canvas px-3 py-2 text-sm"
+      type="search"
+      [value]="searchDraft()"
+      placeholder="Filter by name"
+      autocomplete="off"
+      (input)="updateSearch($event)"
+    />
+  </label>
+
+  <label class="grid gap-1.5">
+    <span class="flex items-center gap-1.5 text-xs font-medium text-muted">
+      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+      Status
+    </span>
+    <select
+      class="rounded-lg border border-line bg-canvas px-3 py-2 text-sm"
+      [value]="enabledFilterValue()"
+      (change)="setEnabledFilter($event)"
+    >
+      <option value="">Any status</option>
+      <option value="true">Enabled</option>
+      <option value="false">Disabled</option>
+    </select>
+  </label>
+
+  <label class="grid gap-1.5">
+    <span class="flex items-center gap-1.5 text-xs font-medium text-muted">
+      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 3 5 13h6l-1 8 9-12h-6l0-6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+      Action
+    </span>
+    <select
+      class="rounded-lg border border-line bg-canvas px-3 py-2 text-sm"
+      [value]="query().actionType ?? ''"
+      (change)="setActionTypeFilter($event)"
+    >
+      <option value="">Any action</option>
+      @for (type of actionTypes; track type) {
+        <option [value]="type" [selected]="type === query().actionType">{{ type }}</option>
+      }
+    </select>
+  </label>
+</form>
+
+@if (isLoading()) {
+  <p class="rounded-lg border border-line bg-surface px-4 py-3 text-muted" role="status">
+    Loading workflows…
+  </p>
+}
+
+@if (problem(); as failure) {
+  <div
+    class="flex items-center justify-between gap-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger"
+    role="alert"
+  >
+    <p>{{ failure.title }}</p>
+    <button class="rounded-lg border border-current px-3 py-1.5" type="button" (click)="retry()">
+      Try again
+    </button>
+  </div>
+}
+
+@if (actionProblem(); as failure) {
+  <p class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger" role="alert">
+    {{ failure.title }}
+  </p>
+}
+
+@if (showEmptyState()) {
+  @if (filtered()) {
+    <ops-empty-state
+      heading="No workflows match these filters"
+      description="Try widening the search, or clear the filters to see everything."
+    >
+      <button class="rounded-lg border border-current px-3 py-2" type="button" (click)="clearFilters()">
+        Clear filters
+      </button>
+    </ops-empty-state>
+  } @else {
+    <ops-empty-state
+      heading="No workflows yet"
+      description="A workflow runs an action on a schedule. Create one to get started."
+    >
+      @if (session.canEdit()) {
+        <a class="font-semibold text-accent" routerLink="new">Create a workflow</a>
+      }
+    </ops-empty-state>
+  }
+}
+
+@if (workflows().length > 0) {
+  <div class="overflow-x-auto rounded-xl border border-line bg-surface">
+    <table class="w-full min-w-[56rem] border-collapse text-left">
+      <caption class="sr-only">Workflows, {{ total() }} in total</caption>
+      <thead class="border-b border-line text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+        <tr>
+          <th class="px-4 py-3" scope="col" [attr.aria-sort]="sortIndicator('name')">
+            <button class="hover:text-ink" type="button" (click)="toggleSort('name')">Name</button>
+          </th>
+          <th class="px-4 py-3" scope="col">Status</th>
+          <th class="px-4 py-3" scope="col">Schedule</th>
+          <th class="px-4 py-3" scope="col">Action</th>
+          <th class="px-4 py-3" scope="col" [attr.aria-sort]="sortIndicator('updatedAt')">
+            <button class="hover:text-ink" type="button" (click)="toggleSort('updatedAt')">Updated</button>
+          </th>
+          <th class="px-4 py-3" scope="col">Run</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-line">
+        @for (workflow of workflows(); track workflow.id) {
+          <tr class="hover:bg-raised/40">
+            <th class="px-4 py-4 font-medium" scope="row">
+              <span class="flex items-start gap-3">
+                <span class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-raised text-accent" aria-hidden="true">
+                  @switch (workflow.action.type) {
+                    @case ('noop') {
+                      <svg class="size-4" viewBox="0 0 24 24" fill="none"><path d="M7 4h7l4 4v12H7V4Z" stroke="currentColor" stroke-width="1.6" /><path d="M14 4v4h4M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" /></svg>
+                    }
+                    @default {
+                      <svg class="size-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.6" /><path d="M12 4.5v2.2M12 17.3v2.2M4.5 12h2.2M17.3 12h2.2M6.6 6.6l1.6 1.6M15.8 15.8l1.6 1.6M17.4 6.6l-1.6 1.6M8.2 15.8l-1.6 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+                    }
+                  }
+                </span>
+                <span class="min-w-0">
+                  @if (session.canEdit()) {
+                    <a class="text-ink hover:text-accent" [routerLink]="[workflow.id, 'edit']">{{ workflow.name }}</a>
+                  } @else {
+                    {{ workflow.name }}
+                  }
+                  <span class="mt-1 block text-xs font-normal text-muted">{{ blurb(workflow) }}</span>
+                </span>
+              </span>
+            </th>
+            <td class="px-4 py-4">
+              <span
+                class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+                [class]="workflow.enabled ? 'border-success/40 bg-success/10 text-success' : 'border-line bg-raised text-muted'"
+              >
+                <span class="size-1.5 rounded-full" [class]="workflow.enabled ? 'bg-success' : 'bg-muted'" aria-hidden="true"></span>
+                {{ workflow.enabled ? 'Enabled' : 'Paused' }}
+              </span>
+            </td>
+            <td class="px-4 py-4">
+              <span class="block text-sm font-medium">{{ describeCron(workflow.cronExpr) }}</span>
+              <span class="mt-1 block text-xs text-muted">{{ workflow.timezone }} · <code>{{ workflow.cronExpr }}</code></span>
+            </td>
+            <td class="px-4 py-4">
+              <span class="inline-flex items-center gap-2 text-sm">
+                <span class="text-accent" aria-hidden="true">{{ workflow.action.type === 'noop' ? '▶' : '⛓' }}</span>
+                {{ actionLabel(workflow) }}
+              </span>
+            </td>
+            <td class="px-4 py-4 text-sm">
+              <time [attr.datetime]="workflow.updatedAt">{{ workflow.updatedAt | date: 'short' }}</time>
+            </td>
+            <td class="px-4 py-4">
+              <span class="flex items-center justify-end gap-3">
+                <a class="text-sm text-accent whitespace-nowrap hover:underline" routerLink="/battle" [queryParams]="{ workflow: workflow.id }">Watch ↗</a>
+                @if (session.canOperate()) {
+                  <button
+                    class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white hover:bg-blue-500 disabled:cursor-progress disabled:opacity-50"
+                    type="button"
+                    [attr.aria-label]="'Run ' + workflow.name + ' now'"
+                    [disabled]="startingRunId() !== undefined || deletingId() !== undefined"
+                    (click)="runNow(workflow.id)"
+                  >
+                    {{ startingRunId() === workflow.id ? 'Starting…' : 'Run now' }}
+                  </button>
+                }
+                @if (session.canEdit()) {
+                  @if (pendingDeleteId() === workflow.id) {
+                    <button
+                      class="rounded-lg bg-danger px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white hover:bg-danger/90 disabled:cursor-progress disabled:opacity-50"
+                      type="button"
+                      [attr.aria-label]="'Confirm delete ' + workflow.name"
+                      [disabled]="deletingId() !== undefined"
+                      (click)="confirmDelete(workflow.id)"
+                    >
+                      {{ deletingId() === workflow.id ? 'Deleting…' : 'Confirm delete' }}
+                    </button>
+                    <button class="text-sm text-muted hover:text-ink" type="button" [disabled]="deletingId() !== undefined" (click)="cancelDelete()">Cancel</button>
+                  } @else {
+                    <button
+                      class="text-sm text-danger whitespace-nowrap hover:underline disabled:opacity-50"
+                      type="button"
+                      [attr.aria-label]="'Delete ' + workflow.name"
+                      [disabled]="startingRunId() !== undefined || deletingId() !== undefined"
+                      (click)="askDelete(workflow.id)"
+                    >
+                      Delete
+                    </button>
+                  }
+                }
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (totalPages() > 1) {
+    <nav class="mt-4 flex items-center gap-4" aria-label="Pagination">
+      <button
+        class="rounded-lg border border-line px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+        type="button"
+        [disabled]="query().page <= 1"
+        (click)="goToPage(query().page - 1)"
+      >
+        Previous
+      </button>
+      <span aria-live="polite">Page {{ query().page }} of {{ totalPages() }}</span>
+      <button
+        class="rounded-lg border border-line px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+        type="button"
+        [disabled]="query().page >= totalPages()"
+        (click)="goToPage(query().page + 1)"
+      >
+        Next
+      </button>
+    </nav>
+  }
+}
+
+<footer class="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-xs text-muted">
+  <p>OpsFlow · Reliability through controlled chaos.</p>
+  <a class="text-accent hover:underline" routerLink="/battle">View system health →</a>
+</footer>

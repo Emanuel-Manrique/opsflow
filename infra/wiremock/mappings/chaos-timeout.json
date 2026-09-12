@@ -1,0 +1,5 @@
+{
+  "priority": 1,
+  "request": { "urlPathPattern": "/hooks/chaos/timeout", "method": "ANY" },
+  "response": { "status": 204, "fixedDelayMilliseconds": 8000 }
+}

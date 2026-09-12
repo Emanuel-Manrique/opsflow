@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package opsflow.runtime.v1;
+
+// Internal control plane. Tenant and trace IDs travel in gRPC metadata.
+service RuntimeControl {
+  rpc RunNow (RunNowRequest) returns (RunResult);
+  rpc CancelRun (RunRequest) returns (RunResult);
+  rpc RetryRun (RunRequest) returns (RunResult);
+  rpc GetRuntimeHealth (RuntimeHealthRequest) returns (RuntimeHealth);
+  rpc GetRuntimeMetrics (RuntimeMetricsRequest) returns (RuntimeMetrics);
+}
+
+message RunNowRequest {
+  string workflow_id = 1;
+  string chaos_scenario = 2;
+}
+message RunRequest { string run_id = 1; }
+message RunResult { string run_id = 1; }
+message RuntimeHealthRequest {}
+message RuntimeHealth {
+  string status = 1;
+  map<string, string> checks = 2;
+}
+message RuntimeMetricsRequest {}
+// Counts straight off the queue. `reachable` is false when Redis is down, so the
+// console can say so instead of showing zeros as if they were measurements.
+message RuntimeMetrics {
+  bool reachable = 1;
+  int32 waiting = 2;
+  int32 active = 3;
+  int32 delayed = 4;
+  int32 failed = 5;
+  int32 workers = 6;
+}

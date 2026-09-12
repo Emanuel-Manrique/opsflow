@@ -1,0 +1,13 @@
+---
+description: OpsFlow stack pins and hard nos. Always on so the agent does not fight Nx/Angular/Nest with generic defaults.
+alwaysApply: true
+---
+
+This is **OpsFlow**: Nx 23.2 integrated monorepo, **pnpm**, Node 22, Angular **22.1** (`apps/web-angular`, prefix `ops`, zoneless), Nest **12** (`api` :3100, `orchestrator` :3101, `worker` :3102). Tests are **Vitest**; browser e2e is **Playwright**.
+
+- Run tasks with `pnpm nx …` / `pnpm dev`. `pnpm check` = lint → boundaries → typecheck → test → build. Never `ng generate`, `ng serve`, `nest new`, Turbo, or Bun as runtime.
+- Two linters on purpose: **oxlint** = `lint` (everything); **ESLint** = `boundaries`, one rule only (`@nx/enforce-module-boundaries`). Do not add style rules to `eslint.config.mjs`. `type:`/`scope:` tags are enforced — widening one is a design decision.
+- Shared code: `@opsflow/contracts`, `@opsflow/domain`, `@opsflow/persistence` (`scope:server`), `@opsflow/ui`, `@opsflow/testing`. No new apps. No NgRx. No axios. No Jest.
+- TypeORM, Postgres, BullMQ and gRPC are in use (phases B–E). OpenTelemetry remains Phase H. Do not add Kafka.
+- Husky: pre-commit/pre-push run `typecheck` + `lint` + `boundaries`. Commits are conventional (`feat:`, `fix:`). Oxlint layout rules live in `eslint-plugins/ops.cjs` (`ops/no-multiline-import`, destructuring, ternary).
+- Skills live in `.agents/skills/`. Load `opsflow` when implementing; `angular-developer` for Angular APIs; `nx-generate` / `nx-run-tasks` / `nx-workspace` for Nx; `/grill-me` before big designs.

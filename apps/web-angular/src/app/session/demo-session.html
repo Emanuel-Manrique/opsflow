@@ -1,0 +1,117 @@
+<div class="grid items-start gap-8 xl:grid-cols-2">
+  <section class="min-w-0" aria-labelledby="demo-session-heading">
+    <div class="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+      <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-accent">
+        <span class="size-1.5 rounded-full bg-accent" aria-hidden="true"></span>
+        Demo access
+      </p>
+      <p class="font-pixel text-[10px] uppercase tracking-[0.18em] text-muted">// Try OpsFlow Battle View</p>
+    </div>
+
+    <h1 id="demo-session-heading" class="text-4xl font-bold tracking-tight sm:text-5xl">Open a demo session</h1>
+    <p class="mt-4 max-w-xl text-sm leading-relaxed text-muted">
+      Admin manages workflows. Operator runs, retries and cancels them. Viewer has read access.
+    </p>
+
+    <div class="mt-8 grid gap-3">
+      @for (card of cards; track card.role) {
+        <button
+          class="group flex w-full items-center gap-4 rounded-xl border bg-surface px-4 py-4 text-left transition-colors hover:border-accent/70 hover:bg-raised disabled:opacity-50"
+          type="button"
+          [class]="card.role === 'admin' ? 'border-accent shadow-[0_0_0_1px_#458aff80,0_0_24px_#458aff22]' : 'border-line'"
+          [disabled]="session.busy()"
+          (click)="session.change(card.role)"
+        >
+          <span class="flex size-12 shrink-0 items-center justify-center rounded-xl border border-line bg-raised text-accent" aria-hidden="true">
+            @switch (card.role) {
+              @case ('admin') {
+                <svg class="size-5" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 18 7 9l5 3 5-3 2 9H5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                  <path d="M12 4 14 9 12 12 10 9 12 4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg>
+              }
+              @case ('operator') {
+                <svg class="size-5" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M12 4.5v2.2M12 17.3v2.2M4.5 12h2.2M17.3 12h2.2M6.6 6.6l1.6 1.6M15.8 15.8l1.6 1.6M17.4 6.6l-1.6 1.6M8.2 15.8l-1.6 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              }
+              @case ('viewer') {
+                <svg class="size-5" viewBox="0 0 24 24" fill="none">
+                  <path d="M3.5 12s3.2-6 8.5-6 8.5 6 8.5 6-3.2 6-8.5 6-8.5-6-8.5-6Z" stroke="currentColor" stroke-width="1.6" />
+                  <circle cx="12" cy="12" r="2.4" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+              }
+            }
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-base font-semibold text-ink">Continue as {{ card.title }}</span>
+            <span class="mt-0.5 block text-sm text-muted">{{ card.description }}</span>
+          </span>
+          <span class="text-lg text-muted transition-colors group-hover:text-accent" aria-hidden="true">→</span>
+        </button>
+      }
+    </div>
+
+    <div class="mt-8">
+      <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted">Quick role overview</p>
+      <div class="grid gap-4 sm:grid-cols-3">
+        @for (card of cards; track card.role) {
+          <div>
+            <p class="flex items-center gap-2 text-sm font-semibold">
+              <span class="size-1.5 rounded-full" [class]="card.role === 'admin' ? 'bg-accent' : card.role === 'operator' ? 'bg-warning' : 'bg-success'" aria-hidden="true"></span>
+              {{ card.title }}
+            </p>
+            <ul class="mt-2 space-y-1 text-xs text-muted">
+              @for (item of card.permissions; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </div>
+
+    <footer class="mt-10 flex flex-wrap items-end justify-between gap-3 border-t border-line pt-5">
+      <div>
+        <p class="text-sm italic text-ink">“Same workflows. Different perspectives.”</p>
+        <p class="mt-1 text-xs text-muted">Spin up a demo session and explore OpsFlow.</p>
+      </div>
+      <p class="font-pixel text-[10px] uppercase tracking-[0.18em] text-muted">// OpsFlow Battle View</p>
+    </footer>
+  </section>
+
+  <section class="min-w-0 overflow-hidden rounded-2xl border border-blue-400/40 bg-[#080d18] shadow-[0_0_35px_#16488a18]" aria-label="Battle View preview">
+    <header class="flex flex-wrap items-center justify-between gap-2 border-b border-blue-400/30 px-4 py-3">
+      <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#a0b4d1]">
+        <svg class="size-4 text-accent" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="12" rx="1.6" stroke="currentColor" stroke-width="1.6" />
+          <path d="M8 21h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        Battle View preview
+      </p>
+      <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-success">Live · demo environment</p>
+    </header>
+
+    <div class="border-b border-blue-400/30 p-3">
+      <ops-battle-arena [battle]="preview" [schedule]="'Every day at 03:00 UTC'" [events]="previewEvents" />
+    </div>
+
+    <div class="grid grid-cols-2 divide-x divide-blue-400/20 sm:grid-cols-4">
+      @for (tile of metrics; track tile.label) {
+        <div class="px-4 py-3">
+          <p class="text-[10px] uppercase tracking-wider text-[#a0b4d1]">{{ tile.label }}</p>
+          <p class="mt-1 text-xl font-semibold tabular-nums">{{ tile.value }}</p>
+          <p class="mt-1 text-[10px] leading-tight text-muted">{{ tile.hint }}</p>
+        </div>
+      }
+    </div>
+    <footer class="flex flex-wrap items-end justify-between gap-3 border-t border-blue-400/30 px-4 py-3">
+      <div>
+        <p class="text-sm italic text-[#e7eef9]">“Turn workflows into victories.”</p>
+        <p class="mt-1 text-xs text-[#a0b4d1]">Observe. Debug. Recover. Faster.</p>
+      </div>
+      <p class="font-pixel text-[10px] uppercase tracking-[0.18em] text-[#a0b4d1]">OpsFlow Battle View</p>
+    </footer>
+  </section>
+</div>

@@ -1,0 +1,35 @@
+<section class="rounded-xl border border-line bg-surface" aria-label="System Health">
+  <header class="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+    <h2 class="font-semibold">System Health</h2>
+    @if (loaded()) {
+      @if (queueReachable()) {
+        <span class="flex items-center gap-1.5 text-xs text-success"><span class="size-1.5 rounded-full bg-success" aria-hidden="true"></span>Queue reachable</span>
+      } @else {
+        <span class="flex items-center gap-1.5 text-xs text-danger" role="status"><span class="size-1.5 rounded-full bg-danger" aria-hidden="true"></span>Queue unreachable</span>
+      }
+    }
+  </header>
+
+  @if (!loaded()) {
+    <p class="px-4 py-8 text-center text-sm text-muted" role="status">{{ store.metricsLoading() ? 'Loading metrics…' : 'Metrics unavailable. Retrying automatically…' }}</p>
+  } @else {
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3">
+      @for (tile of tiles(); track tile.label) {
+        <div class="rounded-lg border border-line bg-raised/60 px-3 py-2.5">
+          <p class="text-xs leading-tight text-muted">{{ tile.label }}</p>
+          @if (tile.value; as value) {
+            <p class="mt-0.5 text-xl font-semibold tabular-nums">{{ value }}</p>
+          } @else {
+            <p class="mt-0.5 text-sm font-medium text-muted" title="This number cannot be measured right now">unavailable</p>
+          }
+          <p class="mt-0.5 text-[11px] leading-tight text-muted">{{ tile.hint }}</p>
+        </div>
+      }
+    </div>
+    @if (sample(); as metrics) {
+      <p class="border-t border-line px-4 py-2 text-xs text-muted">
+        {{ metrics.sampleSize }} runs in the last {{ metrics.windowHours }}h. · Updated every 10s.
+      </p>
+    }
+  }
+</section>
